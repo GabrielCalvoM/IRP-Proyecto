@@ -1,12 +1,12 @@
 import cv2
 
 def resize_img(img: cv2.Mat) -> cv2.Mat:
-    height, width, _ = img.shape
+    height, width = img.shape[:2]
     scale = 640 / max([height, width])
 
     rescaled_img = cv2.resize(img, None, fx=scale, fy=scale)
 
-    new_height, new_width, _ = rescaled_img.shape
+    new_height, new_width = rescaled_img.shape[:2]
     v_padding, h_padding = 640 - new_height, 640 - new_width
 
     top: int = v_padding // 2
