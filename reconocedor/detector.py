@@ -1,10 +1,11 @@
 from ultralytics import YOLO
-from ultralytics.engine.results import Results, Boxes
+from ultralytics.engine.results import Results
 import torch
+import torchvision
 import cv2
 
-model = YOLO("modelos/yolo26l.pt")
-vehicle_classes = [1, 2, 3, 5, 7]
+model = YOLO("modelos/yolov8m.pt")
+vehicle_classes = (1, 2, 3, 5, 7)
 
 def yolo_detector(normalized_img: cv2.Mat) -> Results :
     global model
@@ -13,7 +14,7 @@ def yolo_detector(normalized_img: cv2.Mat) -> Results :
 
     return results[0]
 
-def filter_classes(result: Results, filter_list: list[int] = vehicle_classes) -> Results :
+def filter_classes(result: Results, filter_list: tuple[int] = vehicle_classes) -> Results :
     mask = torch.isin(result.boxes.cls, torch.tensor(filter_list))
 
     result.boxes = result.boxes[mask]
@@ -27,17 +28,29 @@ def filter_conf(result: Results, filter_threshold: float = 0.5) -> Results :
 
     return result
 
-def identify_img(normalized_img: cv2.Mat, filter_list: list[int] = vehicle_classes, filter_threshold: int = 0.5) -> Results:
+def remove_duplicates(result: Results, iou_threshold: float = 0.5) -> Results:
+    mask = torchvision.ops.nms(
+        result.boxes.xyxy,
+        result.boxes.conf,
+        iou_threshold=iou_threshold
+    )
+
+    result.boxes = result.boxes[mask]
+
+    return result
+
+def identify_img(normalized_img: cv2.Mat, filter_list: tuple[int] = vehicle_classes, filter_threshold: float = 0.5, iou_threshold: float = 0.85) -> Results:
     result = yolo_detector(normalized_img)
     result = filter_classes(result, filter_list)
     result = filter_conf(result, filter_threshold)
+    result = remove_duplicates(result, iou_threshold)
 
     return result
 
 def set_boxes(img: cv2.Mat, result: Results, resize_info: dict[str, float | int]) -> cv2.Mat :
     boxes = result.boxes
 
-    new_img = img
+    new_img = img.copy()
 
     for box in boxes:
         clase = int(box.cls)
@@ -54,9 +67,9 @@ def set_boxes(img: cv2.Mat, result: Results, resize_info: dict[str, float | int]
 
         font = cv2.FONT_HERSHEY_SIMPLEX
         font_scale = min((height, width)) / 1000
-        (text_width, text_height), baseline = cv2.getTextSize(result.names[clase], font, font_scale, 1)
+        (text_width, text_height), _ = cv2.getTextSize(result.names[clase], font, font_scale, 1)
 
         cv2.rectangle(new_img, (x1, y1 - text_height - 10), (x1 + text_width, y1), box_color, -1)
-        cv2.putText(new_img, result.names[clase], (x1, y1 - 5), font, font_scale, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(new_img, result.names[clase], (x1, y1 - 5), font, font_scale, (0, 0, 0), 1, cv2.LINE_AA)
 
     return new_img

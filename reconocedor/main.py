@@ -5,10 +5,10 @@ from detector import *
 
 def test_dir(filedir: str = "tests"):
     for archivo in os.listdir(filedir):
-        if archivo.endswith(('.jpg', '.jpeg', '.png')):            
+        if archivo.endswith(('.jpg', '.png')):            
             test_file(filedir, archivo)
 
-def test_file(filedir: str = "tests", filename: str = "test1.png"):
+def test_file(filedir: str = "tests", filename: str = "test001.png"):
     ruta = os.path.join(filedir, filename)
 
     img = cv2.imread(ruta)
