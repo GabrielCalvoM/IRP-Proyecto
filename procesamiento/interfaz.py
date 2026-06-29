@@ -59,6 +59,10 @@ class Interfaz:
         self.last_result = None
         self.last_resize_info = None
 
+        self.line_start = None
+        self.line_end = None
+        self.clicks = []
+
         self.crear_componentes()
 
     def crear_componentes(self):
@@ -194,8 +198,8 @@ class Interfaz:
         frame_logs = ctk.CTkFrame(frame_principal)
 
         frame_logs.pack(
-            fill="both",
-            expand=True,
+            fill="x",
+            expand=False,
             padx=10,
             pady=10
         )
@@ -207,7 +211,7 @@ class Interfaz:
 
         self.log_box = ScrolledText(
             frame_logs,
-            height=10,
+            height=5,
             bg="#1e1e1e",
             fg="white"
         )
@@ -233,6 +237,12 @@ class Interfaz:
             pady=10
         )
 
+        ctk.CTkButton(
+            frame_botones,
+            text="Configurar Línea",
+            command=self.configurar_linea
+        ).pack(side="left", padx=10)
+        
         ctk.CTkButton(
             frame_botones,
             text="Iniciar",
@@ -301,6 +311,78 @@ class Interfaz:
 
             print(f"Video seleccionado: {archivo}")
 
+    def configurar_linea(self):
+
+        if not self.video_path:
+            print("Seleccione un video primero")
+            return
+
+        cap = cv2.VideoCapture(self.video_path)
+
+        ret, frame = cap.read()
+
+        cap.release()
+
+        if not ret:
+            print("No se pudo leer el video")
+            return
+
+        self.clicks = []
+
+        self.frame_dibujo = frame.copy()
+
+        cv2.namedWindow("Configurar Linea")
+
+        cv2.setMouseCallback(
+            "Configurar Linea",
+            self.mouse_callback
+        )
+
+        while True:
+
+            cv2.imshow(
+                "Configurar Linea",
+                self.frame_dibujo
+            )
+
+            if len(self.clicks) == 2:
+                break
+
+            cv2.waitKey(1)
+
+        cv2.destroyAllWindows()
+
+        self.line_start = self.clicks[0]
+        self.line_end = self.clicks[1]
+
+        print(
+            f"Linea configurada: "
+            f"{self.line_start} -> {self.line_end}"
+        )
+    
+    def mouse_callback(self, event, x, y, flags, param):
+        if event == cv2.EVENT_LBUTTONDOWN:
+
+            self.clicks.append((x, y))
+
+            cv2.circle(
+                self.frame_dibujo,
+                (x, y),
+                5,
+                (0, 255, 0),
+                -1
+            )
+
+            if len(self.clicks) == 2:
+
+                cv2.line(
+                    self.frame_dibujo,
+                    self.clicks[0],
+                    self.clicks[1],
+                    (0, 0, 255),
+                    3
+                )
+
     def iniciar(self):
 
         if not self.video_path:
@@ -330,6 +412,14 @@ class Interfaz:
 
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, posicion_actual)
 
+        if self.line_start is None or self.line_end is None:
+
+            print(
+                "Debe configurar una linea primero"
+            )
+
+            return
+
         initialize_counter(
             (
                 "car",
@@ -337,10 +427,8 @@ class Interfaz:
                 "bus",
                 "truck"
             ),
-            (300, 300),
-            (900, 300),
-            # (300, 400),
-            # (900, 400),
+            self.line_start,
+            self.line_end,
             resize_info
         )
 
@@ -429,7 +517,7 @@ class Interfaz:
 
         imagen = Image.fromarray(frame_rgb)
 
-        imagen.thumbnail((900, 500))
+        imagen.thumbnail((700, 400))
 
         foto = ImageTk.PhotoImage(imagen)
 
