@@ -1,6 +1,7 @@
 import customtkinter as ctk
 import cv2
 import sys
+import os
 
 from tkinter import filedialog
 from tkinter.scrolledtext import ScrolledText
@@ -19,6 +20,7 @@ from tracking.seguidor import track_frame
 
 from tracking.contador import initialize_counter
 from tracking.contador import count_detections
+from tracking.contador import draw_line
 from tracking.contador import counter
 
 class ConsoleRedirect:
@@ -317,6 +319,17 @@ class Interfaz:
 
         initialize_tracker()
 
+        self.video_fps = self.cap.get(
+            cv2.CAP_PROP_FPS
+        )
+
+        posicion_actual = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+
+        _, frame = self.cap.read()
+        _, resize_info = normalize(frame)
+
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, posicion_actual)
+
         initialize_counter(
             (
                 "car",
@@ -326,12 +339,9 @@ class Interfaz:
             ),
             (300, 300),
             (900, 300),
-            (300, 400),
-            (900, 400)
-        )
-
-        self.video_fps = self.cap.get(
-            cv2.CAP_PROP_FPS
+            # (300, 400),
+            # (900, 400),
+            resize_info
         )
 
         if self.video_fps <= 0:
@@ -393,6 +403,8 @@ class Interfaz:
             self.last_resize_info = resize_info
 
         if self.last_result is not None:
+
+            frame = draw_line(frame)
 
             frame = set_boxes(
                 frame,
