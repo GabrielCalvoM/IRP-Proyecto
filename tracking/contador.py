@@ -17,13 +17,24 @@ def initialize_counter(classes: tuple[str],
     for c in classes:
         counter[c] = 0
     
-    pending1 = []
-    pending2 = []
+    pending1 = set()
+    pending2 = set()
 
-    line1 = sv.LineZone(start1, end1)
-    line2 = sv.LineZone(start2, end2)
+    line1 = sv.LineZone(
+    start=sv.Point(start1[0], start1[1]),
+    end=sv.Point(end1[0], end1[1])
+    )
 
-def count_detections(detections: sv.Detections):
+    line2 = sv.LineZone(
+        start=sv.Point(start2[0], start2[1]),
+        end=sv.Point(end2[0], end2[1])
+    )
+
+def count_detections(detections: sv.Detections, names):
+
+    print("TRACKER IDs:", detections.tracker_id)
+    print("CLASS IDs:", detections.class_id)
+
     global line1, line2, counter, pending1, pending2
     
     (in1, out1) = line1.trigger(detections)
@@ -40,7 +51,8 @@ def count_detections(detections: sv.Detections):
             continue
 
         class_id = det[0]
-        class_name = detections["names"][class_id]
+        class_name = names[class_id]
+
         counter[class_name] += 1
         pending1.remove(det)
 
@@ -49,7 +61,8 @@ def count_detections(detections: sv.Detections):
             continue
 
         class_id = det[0]
-        class_name = detections["names"][class_id]
+        class_name = names[class_id]
+
         counter[class_name] += 1
         pending2.remove(det)
 

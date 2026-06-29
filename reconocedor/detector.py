@@ -4,13 +4,16 @@ import torch
 import torchvision
 import cv2
 
-model = YOLO("modelos/yolov8m.pt")
+model = YOLO("modelos/yolov8n.pt")
 vehicle_classes = (1, 2, 3, 5, 7)
 
 def yolo_detector(normalized_img: cv2.Mat) -> Results :
     global model
 
-    results = model.predict(normalized_img)
+    results = model.predict(
+        normalized_img,
+        verbose=False
+    )
 
     return results[0]
 
